@@ -1,0 +1,18 @@
+{
+ "rejim": "lora",
+ "train_klip": 3000,
+ "epoch": 3,
+ "effektiv_batch": 16,
+ "learning_rate": 0.001,
+ "oqitiladigan_parametr": 3538944,
+ "jami_parametr": 245273856,
+ "oqitiladigan_foiz": 1.44,
+ "trening_daqiqa": 8.3,
+ "gpu_xotira_gb": 7.3,
+ "saqlangan_mb": 13.5,
+ "train_loss": 0.8425,
+ "val200_WER": 37.87,
+ "val200_CER": 12.62,
+ "halqa_klip": 3,
+ "baholash_daqiqa": 5.6
+}

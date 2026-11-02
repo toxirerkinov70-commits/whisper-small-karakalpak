@@ -1,0 +1,4 @@
+# CI testlari (model yuklanmaydi)
+numpy>=1.26
+librosa>=0.10
+pytest>=8

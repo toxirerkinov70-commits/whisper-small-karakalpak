@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Katta ma'lumot va modellar (HF Hub'da turadi, repoga kirmaydi)
+hf_cache/
+DATASET_trimmed/
+data.tar
+whisper-small-kaa/
+06_finetune/whisper-small-kaa/
+08_lora/full/
+08_lora/lora/
+*.safetensors
+*.bin
+runs/
+
+# Lokal
+.env
+*.log

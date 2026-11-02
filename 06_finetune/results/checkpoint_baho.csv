@@ -1,0 +1,7 @@
+checkpoint,dekodlash,WER,CER,halqa_klip
+checkpoint-5000,greedy,26.44,13.46,28
+checkpoint-5000,beam5_norep4,21.64,6.82,0
+checkpoint-5500,greedy,26.54,13.15,27
+checkpoint-5500,beam5_norep4,21.72,6.79,0
+checkpoint-5840,greedy,26.07,12.73,24
+checkpoint-5840,beam5_norep4,21.81,6.81,0

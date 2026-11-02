@@ -1,0 +1,18 @@
+{
+ "rejim": "full",
+ "train_klip": 3000,
+ "epoch": 3,
+ "effektiv_batch": 16,
+ "learning_rate": 1e-05,
+ "oqitiladigan_parametr": 240582912,
+ "jami_parametr": 241734912,
+ "oqitiladigan_foiz": 99.52,
+ "trening_daqiqa": 15.7,
+ "gpu_xotira_gb": 11.6,
+ "saqlangan_mb": 922.2,
+ "train_loss": 0.8118,
+ "val200_WER": 89.42,
+ "val200_CER": 42.11,
+ "halqa_klip": 33,
+ "baholash_daqiqa": 7.8
+}

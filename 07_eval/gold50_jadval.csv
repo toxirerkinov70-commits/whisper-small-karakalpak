@@ -1,0 +1,9 @@
+variant,toplam,klip,WER_eski,CER_eski,WER_gold,CER_gold,fayl
+baseline_kk_lotin greedy,50 klip,50,100.72,48.23,100.66,48.18,07_eval/eval50_baseline_kk_lotin_greedy.csv
+baseline_kk_lotin greedy,audio'siz,39,102.17,46.31,102.08,46.25,07_eval/eval50_baseline_kk_lotin_greedy.csv
+finetune greedy,50 klip,50,21.13,7.57,21.24,7.58,07_eval/eval50_finetune_greedy.csv
+finetune greedy,audio'siz,39,18.85,6.47,18.99,6.49,07_eval/eval50_finetune_greedy.csv
+finetune beam5,50 klip,50,19.39,6.81,19.5,6.82,07_eval/eval50_finetune_beam5.csv
+finetune beam5,audio'siz,39,17.24,5.71,17.39,5.73,07_eval/eval50_finetune_beam5.csv
+finetune beam5_norep4,50 klip,50,23.35,7.82,23.46,7.83,07_eval/eval50_finetune_beam5_norep4.csv
+finetune beam5_norep4,audio'siz,39,20.69,6.52,20.83,6.54,07_eval/eval50_finetune_beam5_norep4.csv

@@ -1,0 +1,5 @@
+model,dekodlash,eval50_WER,eval50_CER,eval50_fayl,test_WER,test_CER,test_fayl
+baseline_kk_lotin,greedy,100.72,48.23,07_eval/eval50_baseline_kk_lotin_greedy.csv,100.29,48.69,07_eval/test_baseline_kk_lotin_greedy.csv
+finetune,greedy,21.13,7.57,07_eval/eval50_finetune_greedy.csv,27.04,13.35,07_eval/test_finetune_greedy.csv
+finetune,beam5,19.39,6.81,07_eval/eval50_finetune_beam5.csv,20.22,7.12,07_eval/test_finetune_beam5.csv
+finetune,beam5_norep4,23.35,7.82,07_eval/eval50_finetune_beam5_norep4.csv,22.45,7.07,07_eval/test_finetune_beam5_norep4.csv
