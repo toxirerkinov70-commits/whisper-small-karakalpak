@@ -6,7 +6,7 @@
 Ma'lumotni tozalashdan xatolar tahliligacha bo'lgan butun yo'l shu repoda: kod, natijalar va har bir raqamning manbasi.
 
 [![Model](https://img.shields.io/badge/🤗%20Model-whisper--small--karakalpak-FFD21E?style=for-the-badge)](https://huggingface.co/Toxirerkinovtohir/whisper-small-karakalpak)
-[![Demo](https://img.shields.io/badge/▶%20Demo-brauzerda%20sinash-EC4899?style=for-the-badge)](https://huggingface.co/spaces/Toxirerkinovtohir/karakalpak-asr)
+[![Demo](https://img.shields.io/badge/▶%20Demo-brauzerda%20sinash-EC4899?style=for-the-badge)](https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html)
 [![Video](https://img.shields.io/badge/🎬%20Video-54%20soniya-8B5CF6?style=for-the-badge)](assets/video_16x9.mp4)
 
 ![Test WER](https://img.shields.io/badge/test%20WER-20.2%25-10B981?style=flat-square)
@@ -47,7 +47,9 @@ Ma'lumotni tozalashdan xatolar tahliligacha bo'lgan butun yo'l shu repoda: kod, 
 
 ## 🚀 Sinab ko'rish
 
-**1. Brauzerda, hech narsa o'rnatmasdan.** [**Demo sahifasi**](https://huggingface.co/spaces/Toxirerkinovtohir/karakalpak-asr): mikrofonga gapiring yoki fayl yuklang. Model sizning brauzeringizda ishlaydi ([transformers.js](https://huggingface.co/docs/transformers.js), ONNX, 8-bit). Audio hech qayerga yuborilmaydi.
+**1. Brauzerda, hech narsa o'rnatmasdan.** [**Demo sahifasi**](https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html) ([HF Space](https://huggingface.co/spaces/Toxirerkinovtohir/karakalpak-asr)): mikrofonga gapiring yoki fayl yuklang. Model sizning brauzeringizda ishlaydi ([transformers.js](https://huggingface.co/docs/transformers.js), ONNX). Audio hech qayerga yuborilmaydi. Model ~610 MB, birinchi marta yuklanadi, keyin brauzer keshidan olinadi.
+
+<div align="center"><img src="assets/brauzer_demo.png" alt="Brauzer demosi: namuna audio va modelning chiqishi" width="760"></div>
 
 **2. Python, 3 qator.** Model Hugging Face'dan o'zi yuklanadi:
 
@@ -111,7 +113,8 @@ Har bir papka bitta bosqich, raqami ishlash tartibini bildiradi:
 | [`06_finetune`](06_finetune) | O'qitish, checkpoint tanlash, trening tarixi | `train_whisper.py`, `results/` |
 | [`07_eval`](07_eval) | Teng sharoitda baholash, xatolar tahlili | `eval_teng.py`, [`xatolar_tahlili.md`](07_eval/xatolar_tahlili.md) |
 | [`08_lora`](08_lora) | LoRA va to'liq fine-tuning taqqoslovi | `lora_vs_full.py`, `*_natija.json` |
-| [`scripts`](scripts) | README grafiklari va video | `make_figures.py`, `make_video.py` |
+| [`scripts`](scripts) | README grafiklari, video va ONNX eksport | `make_figures.py`, `make_video.py`, `export_onnx.py` |
+| [`web`](web) | Brauzer demosi (transformers.js) va uning oxirigacha testi | `index.html`, `serve.py`, `e2e_test.mjs` |
 | [`docs`](docs) | Bir sahifalik yakuniy xulosa | [`YAKUNIY_XULOSA.md`](docs/YAKUNIY_XULOSA.md) |
 
 ---
@@ -191,6 +194,21 @@ LoRA 7.3 GB xotira oladi va 13.5 MB fayl saqlaydi (to'liq FT: 11.6 GB va 922 MB)
 
 ---
 
+## 🌐 Brauzer demo qanday qurilgan
+
+Model PyTorch'dan ONNX'ga o'girildi va [`web/index.html`](web/index.html) sahifasida `transformers.js` orqali ishga tushirildi. Yo'lda uchta tuzoq chiqdi, har biri o'lchab hal qilindi:
+
+| Muammo | Sabab | Yechim |
+|---|---|---|
+| `Missing the following inputs: cache_position` | transformers ≥ 4.43 bilan eksport decoder'ga yangi kirish qo'shadi, transformers.js uni bermaydi | Eksport transformers 4.42 + optimum 1.21 muhitida ([`scripts/export_onnx.py`](scripts/export_onnx.py)) |
+| 8-bit modelda sifat tushdi | Per-tensor 8-bit: 40 ta test klipida CER 8.84% → 15.60% | Encoder fp32 + decoder **4-bit blokli** (MatMulNBits): namunalarda PyTorch'ga deyarli aynan mos |
+| 12 s audio **188 s** da o'qildi | Brauzer WASM'ni bitta oqimda ishlatgan | COOP/COEP sarlavhalari (`crossOriginIsolated`) → ko'p oqim: **13 s** |
+
+Sahifa haqiqiy brauzerda oxirigacha sinaldi ([`web/e2e_test.mjs`](web/e2e_test.mjs), headless Edge): model yuklandi, namuna haqiqiy matn bilan aynan bir xil o'qildi, konsolda xato yo'q.
+Lokal ishga tushirish: `python web/serve.py`, keyin `http://127.0.0.1:8000/web/`.
+
+---
+
 ## 🔁 Natijalarni takrorlash
 
 ```bash
@@ -211,7 +229,7 @@ Testlar: `pip install -r requirements-dev.txt && pytest`. Ular normalizatsiya qo
 ## 🚧 Cheklovlar va keyingi qadamlar
 
 - Ma'lumot asosan **yangiliklar uslubidagi o'qilgan nutq**. Erkin suhbat, shevalar va shovqinda sifat pastroq bo'lishi kutiladi.
-- Brauzer demosi `transformers.js` da **greedy** dekodlash va 8-bit model bilan ishlaydi, shuning uchun Python'dagi beam 5 dan biroz pastroq.
+- Brauzer demosi `transformers.js` da **greedy** dekodlash bilan ishlaydi (decoder 4-bit), shuning uchun Python'dagi beam 5 dan biroz pastroq.
 - Sonlar so'z bilan yoziladi (`eki mıń jigirma altınshı`), tinish belgisi va katta harf yo'q. Model normalizatsiya qilingan matn uslubida yozadi.
 - **Keyingi qadamlar:**
   - qoraqalpoq matnidan til modeli qurib, LM fusion qilish (qo'shimcha xatolariga qarshi);

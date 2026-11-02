@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qoraqalpoqcha ASR</title>
+<meta name="description" content="Qoraqalpoqcha nutqni matnga aylantirish: Whisper-small fine-tune, to'liq brauzerda ishlaydi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #080a1c; --ink: #f4f6ff; --ink2: #c9cee8; --dim: #8e95b8;
+    --violet: #8b5cf6; --pink: #ec4899; --orange: #f97316; --amber: #fbbf24;
+    --cyan: #22d3ee; --blue: #3b82f6; --emerald: #10b981; --red: #f43f5e;
+    --glass: rgba(255,255,255,.07); --glass2: rgba(255,255,255,.12); --line: rgba(255,255,255,.14);
+    --r: 22px;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--navy); color: var(--ink);
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+  }
+  /* jonli rangli fon */
+  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: var(--navy); }
+  .blob { position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(90px); opacity: .45;
+          animation: drift 22s ease-in-out infinite alternate; }
+  .b1 { background: var(--violet); top: -20vmax; left: -15vmax; }
+  .b2 { background: var(--pink); bottom: -25vmax; right: -15vmax; animation-delay: -6s; animation-duration: 26s; }
+  .b3 { background: var(--cyan); top: 30%; left: 40%; width: 40vmax; height: 40vmax; opacity: .25; animation-delay: -12s; }
+  @keyframes drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(8vmax,6vmax) scale(1.15); }
+                     100% { transform: translate(-6vmax,10vmax) scale(.95); } }
+  @media (prefers-reduced-motion: reduce) { .blob { animation: none; } }
+
+  main { max-width: 980px; margin: 0 auto; padding: 40px 16px 64px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+          background: var(--glass); border: 1px solid var(--line); font-size: 13px; font-weight: 600;
+          letter-spacing: .06em; color: var(--cyan); text-transform: uppercase; }
+  h1 { font-size: clamp(36px, 7vw, 68px); line-height: 1.02; margin: 18px 0 12px; font-weight: 800; letter-spacing: -.02em; }
+  .grad { background: linear-gradient(92deg, var(--cyan), var(--violet) 40%, var(--pink) 70%, var(--orange));
+          -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { color: var(--ink2); font-size: 18px; max-width: 640px; line-height: 1.55; margin: 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 30px; }
+  .stat { padding: 14px 18px; border-radius: 16px; background: var(--glass); border: 1px solid var(--line); min-width: 150px; }
+  .stat b { display: block; font-size: 26px; font-weight: 800; }
+  .stat > span { color: var(--dim); font-size: 13px; }
+  .stat .from { color: var(--orange); text-decoration: line-through; font-size: 16px; font-weight: 600; margin-right: 6px; }
+
+  .card { background: var(--glass); border: 1px solid var(--line); border-radius: var(--r); padding: 26px;
+          backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  /* yuklash holati */
+  .loader { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .bar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 99px;
+           background: linear-gradient(90deg, var(--pink), var(--violet), var(--cyan)); transition: width .2s; }
+  .status { color: var(--ink2); font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .status code { font-family: "JetBrains Mono", monospace; color: var(--dim); }
+
+  /* mikrofon */
+  .rec { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px 0 4px; }
+  .mic { position: relative; width: 132px; height: 132px; border-radius: 50%; border: 0; cursor: pointer;
+         background: linear-gradient(135deg, var(--violet), var(--pink)); color: #fff;
+         box-shadow: 0 10px 40px rgba(236,72,153,.45); transition: transform .15s, filter .2s; }
+  .mic:hover:not(:disabled) { transform: scale(1.04); }
+  .mic:disabled { filter: grayscale(.8) brightness(.6); cursor: not-allowed; }
+  .mic svg { width: 48px; height: 48px; }
+  .mic::before, .mic::after { content: ""; position: absolute; inset: -10px; border-radius: 50%;
+         border: 2px solid var(--pink); opacity: 0; }
+  .mic.on { background: linear-gradient(135deg, var(--red), var(--orange)); }
+  .mic.on::before { animation: ring 1.6s ease-out infinite; }
+  .mic.on::after { animation: ring 1.6s ease-out .8s infinite; }
+  @keyframes ring { 0% { transform: scale(.9); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
+  .hint { color: var(--dim); font-size: 14px; text-align: center; min-height: 20px; }
+  .timer { font-family: "JetBrains Mono", monospace; color: var(--ink2); }
+  canvas#viz { width: 100%; height: 60px; display: block; }
+
+  .drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
+          border: 2px dashed rgba(255,255,255,.22); border-radius: 18px; padding: 30px 16px; cursor: pointer;
+          transition: border-color .2s, background .2s; min-height: 180px; }
+  .drop:hover, .drop.over { border-color: var(--cyan); background: rgba(34,211,238,.06); }
+  .drop strong { font-size: 17px; }
+  .drop span { color: var(--dim); font-size: 14px; }
+  input[type=file] { display: none; }
+
+  h2 { font-size: 20px; margin: 0 0 14px; }
+  .examples { display: grid; gap: 12px; }
+  .ex { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 16px;
+        background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+  .ex audio { width: 230px; max-width: 45%; height: 36px; }
+  .ex p { margin: 0; flex: 1; color: var(--ink2); font-size: 14px; line-height: 1.45; }
+  .btn { border: 0; border-radius: 12px; padding: 10px 16px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+         color: #fff; background: linear-gradient(135deg, var(--blue), var(--violet)); white-space: nowrap; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.ghost { background: var(--glass2); }
+  @media (max-width: 640px) { .ex { flex-wrap: wrap; } .ex audio { width: 100%; max-width: 100%; } }
+
+  .result { margin-top: 18px; display: none; }
+  .result.show { display: block; animation: pop .35s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .out { font-size: 21px; line-height: 1.6; margin: 6px 0 14px; min-height: 34px; word-wrap: break-word; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pill { padding: 6px 12px; border-radius: 999px; background: var(--glass2); color: var(--ink2); font-size: 13px; }
+  .pill.ok { color: #9ff3d0; background: rgba(16,185,129,.18); }
+  .ref { margin-top: 12px; color: var(--dim); font-size: 14px; line-height: 1.5; }
+  .spin { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25);
+          border-top-color: var(--cyan); animation: rot .8s linear infinite; vertical-align: -3px; margin-right: 8px; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  .note { color: var(--dim); font-size: 13.5px; line-height: 1.6; margin-top: 26px; }
+  .note a, footer a { color: var(--cyan); text-decoration: none; }
+  .note a:hover, footer a:hover { text-decoration: underline; }
+  footer { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 10px; }
+  footer a.l { padding: 10px 16px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); color: var(--ink);
+               font-weight: 600; font-size: 14px; }
+  .fast { display: none; margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; text-decoration: none; color: #fde68a;
+          background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.45); font-size: 14px; line-height: 1.5; }
+  .fast:hover { background: rgba(251,191,36,.2); }
+  .err { color: #fecdd3; background: rgba(244,63,94,.15); border: 1px solid rgba(244,63,94,.4); padding: 12px 14px;
+         border-radius: 12px; font-size: 14px; display: none; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<main>
+  <span class="chip">● Brauzerda ishlaydi · audio hech qayerga yuborilmaydi</span>
+  <h1>Qoraqalpoqcha nutq <span class="grad">→ matn</span></h1>
+  <p class="lead">Whisper-small qoraqalpoq tiliga fine-tune qilingan: 99 soat nutqda o'qitilgan. Gapiring yoki audio yuklang, model shu sahifaning ichida ishlaydi.</p>
+
+  <div class="stats">
+    <div class="stat"><b><span class="from">100.3%</span><span class="grad">20.2%</span></b><span>test WER (Python, beam 5)</span></div>
+    <div class="stat"><b class="grad">7.1%</b><span>test CER</span></div>
+    <div class="stat"><b>99 soat</b><span>toza o'qitish ma'lumoti</span></div>
+    <div class="stat"><b>~610 MB</b><span>bir marta yuklanadi, keyin keshda</span></div>
+  </div>
+
+  <a class="fast" id="fast" href="https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html" target="_blank" rel="noopener">
+    ⚡ Bu oynada model bitta oqimda ishlaydi (sekin). <b>~10× tezroq ishlashi uchun to'g'ridan-to'g'ri oching →</b></a>
+  <div class="card">
+    <div class="err" id="err"></div>
+    <div class="loader" id="loader">
+      <div class="status"><span id="loadText">Model tayyorlanmoqda…</span><code id="loadPct">0%</code></div>
+      <div class="bar"><i id="loadBar"></i></div>
+    </div>
+
+    <div class="grid">
+      <div class="rec">
+        <button class="mic" id="mic" disabled aria-label="Yozishni boshlash">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+        <canvas id="viz" width="600" height="60"></canvas>
+        <div class="hint" id="micHint">Bosing va qoraqalpoqcha gapiring</div>
+      </div>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="audio/*,.flac,.wav,.mp3,.m4a,.ogg,.opus">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <strong>Audio fayl yuklang</strong>
+        <span>wav · mp3 · flac · m4a · ogg — yoki shu yerga tashlang</span>
+      </label>
+    </div>
+
+    <div class="result card" id="result">
+      <div class="status"><span id="resTitle">Natija</span><span></span></div>
+      <div class="out" id="out"></div>
+      <div class="meta" id="meta"></div>
+      <div class="ref" id="ref"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Test to'plamidan namunalar</h2>
+    <div class="examples" id="examples"></div>
+  </div>
+
+  <p class="note">
+    Brauzer versiyasi ONNX model (encoder fp32, decoder 4-bit) va <b>greedy</b> dekodlash bilan ishlaydi (<a href="https://huggingface.co/docs/transformers.js">transformers.js</a>).
+    Shu sahifadagi namunalarda va 30 soniyalik uzun audioda brauzer natijasi PyTorch bilan deyarli aynan bir xil chiqdi.
+    Greedy dekodlash Python'dagi beam 5'dan biroz pastroq (test WER 27.0% va 20.2%).
+    Telefonda birinchi yuklanish biroz vaqt oladi. Eng yuqori sifat uchun (beam 5, halqa zaxirasi, test WER 18.7%)
+    Python'dagi <a href="https://github.com/toxirerkinov70-commits/whisper-small-karakalpak#-sinab-korish"><code>transcribe.py</code></a> dan foydalaning.
+    Model yangiliklar uslubidagi o'qilgan nutqda o'qitilgan; erkin suhbat va shovqinda sifat pastroq bo'lishi mumkin. Model matnni kichik harf va tinish belgilarisiz yozadi.
+    Namuna audiolar: <a href="https://huggingface.co/datasets/atikuwu/karakalpak-speech-corpus">Karakalpak Speech Corpus</a> (atikuwu, CC-BY-4.0).
+  </p>
+
+  <footer>
+    <a class="l" href="https://github.com/toxirerkinov70-commits/whisper-small-karakalpak">💻 GitHub: kod va tajribalar</a>
+    <a class="l" href="https://huggingface.co/Toxirerkinovtohir/whisper-small-karakalpak">🤗 Model</a>
+    <a class="l" href="https://github.com/toxirerkinov70-commits">Toxir Erkinov</a>
+  </footer>
+</main>
+
+<script type="module">
+import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1";
+
+const MODEL = "Toxirerkinovtohir/whisper-small-karakalpak";
+const SR = 16000;
+const NAMUNALAR = [
+  ["../examples/namuna_1.flac", "parlament qadaǵalawın alıp barıwda tiykarǵı itibar aymaqlarǵa qaratıladı mámleketimiz basshısı tárepinen sociallıq ekonomikalıq tarawlarda anıq wazıypalar hám úlken shekler qoyılmaqta"],
+  ["../examples/namuna_2.flac", "ilajda qaraqalpaqstan respublikası salıq basqarmasınıń baslıǵı xalmurza bekchanov sawda sanaat palatasınıń baslıǵı kazbek artikov taraw qánigeleri isbilermenler hám xalıq wákilleri qatnastı"],
+  ["../examples/namuna_3.flac", "sonıń ushın mektepler hám kásip ónerge oqıtıw oraylarında bunday sabaqlardı kóbeytiw texikumlarǵa sırt elden oqıtıwshılardı alıp keliw boyınsha kórsetpeler berildi"],
+];
+
+const $ = (id) => document.getElementById(id);
+let asr = null, busy = false;
+
+// iframe ichida (huggingface.co/spaces sahifasi) crossOriginIsolated bo'lmasa, WASM bitta oqimda ishlaydi:
+// foydalanuvchiga to'g'ridan-to'g'ri havolani taklif qilamiz
+if (!self.crossOriginIsolated && window.top !== window) $("fast").style.display = "block";
+
+function xato(msg) { const e = $("err"); e.textContent = msg; e.style.display = "block"; }
+
+// ---------- model yuklash: har bir fayl progressi alohida, umumiy foiz baytlar bo'yicha ----------
+const fayllar = new Map();
+function progress(p) {
+  if (p.status === "progress" || p.status === "download" || p.status === "done") {
+    const f = fayllar.get(p.file) || { loaded: 0, total: 0 };
+    if (p.total) f.total = p.total;
+    if (p.loaded != null) f.loaded = p.loaded;
+    if (p.status === "done" && f.total) f.loaded = f.total;
+    fayllar.set(p.file, f);
+    let l = 0, t = 0;
+    for (const v of fayllar.values()) { l += v.loaded; t += v.total; }
+    const pct = t ? Math.min(100, Math.round((l / t) * 100)) : 0;
+    $("loadBar").style.width = pct + "%";
+    $("loadPct").textContent = `${pct}% · ${(l / 1e6).toFixed(0)} / ${(t / 1e6).toFixed(0)} MB`;
+    $("loadText").textContent = "Model yuklanmoqda (faqat birinchi marta)…";
+  }
+}
+
+async function yukla() {
+  try {
+    asr = await pipeline("automatic-speech-recognition", MODEL, {
+      dtype: { encoder_model: "fp32", decoder_model_merged: "q4" },   // Node.js testida tanlangan: q8 sifatni buzdi
+      device: "wasm",
+      progress_callback: progress,
+    });
+    $("loadBar").style.width = "100%";
+    $("loadText").innerHTML = "✓ Model tayyor";
+    $("loadPct").textContent = "brauzer keshida saqlandi";
+    $("mic").disabled = false;
+    document.querySelectorAll(".ex .btn").forEach((b) => (b.disabled = false));
+    setTimeout(() => ($("loader").style.opacity = ".6"), 800);
+  } catch (e) {
+    console.error(e);
+    xato("Modelni yuklab bo'lmadi: " + (e?.message || e) + ". Sahifani yangilab ko'ring.");
+  }
+}
+
+// ---------- audio: istalgan formatni 16 kHz mono Float32Array'ga ----------
+async function decode(arrayBuffer) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SR });
+  try {
+    const buf = await ctx.decodeAudioData(arrayBuffer);
+    if (buf.numberOfChannels === 1) return buf.getChannelData(0);
+    const a = buf.getChannelData(0), b = buf.getChannelData(1), m = new Float32Array(a.length);
+    for (let i = 0; i < a.length; i++) m[i] = (a[i] + b[i]) / 2;
+    return m;
+  } finally { ctx.close(); }
+}
+
+async function transkripsiya(audio, sarlavha, haqiqiy = "") {
+  if (!asr || busy) return;
+  busy = true;
+  setBusy(true);
+  const r = $("result");
+  r.classList.add("show");
+  $("resTitle").textContent = sarlavha;
+  $("out").innerHTML = '<span class="spin"></span>Tinglanmoqda…';
+  $("meta").innerHTML = "";
+  $("ref").textContent = "";
+  const sek = audio.length / SR;
+  const t0 = performance.now();
+  try {
+    const res = await asr(audio, { language: "uzbek", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 });
+    const matn = (res.text || "").trim();
+    const s = (performance.now() - t0) / 1000;
+    $("out").textContent = matn || "(nutq topilmadi)";
+    $("meta").innerHTML =
+      `<span class="pill">${sek.toFixed(1)} s audio</span><span class="pill">${s.toFixed(1)} s ishlov</span>` +
+      `<span class="pill">greedy · brauzerda</span>` +
+      (matn ? `<button class="btn ghost" id="copy">Nusxa olish</button>` : "");
+    if (haqiqiy) {
+      const ok = matn === haqiqiy;
+      $("ref").innerHTML = (ok ? '<span class="pill ok">✓ haqiqiy matn bilan aynan bir xil</span><br><br>' : "") +
+        "Haqiqiy matn (test to'plamidan): " + haqiqiy;
+    }
+    $("copy")?.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(matn); $("copy").textContent = "✓ Olindi"; } catch { /* ruxsat yo'q */ }
+    });
+  } catch (e) {
+    console.error(e);
+    $("out").textContent = "";
+    xato("Tanib bo'lmadi: " + (e?.message || e));
+  } finally {
+    busy = false;
+    setBusy(false);
+    r.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function setBusy(b) {
+  $("mic").disabled = b || !asr;
+  document.querySelectorAll(".ex .btn").forEach((x) => (x.disabled = b || !asr));
+}
+
+// ---------- namunalar ----------
+for (const [fayl, haqiqiy] of NAMUNALAR) {
+  const d = document.createElement("div");
+  d.className = "ex";
+  d.innerHTML = `<audio controls preload="none" src="${fayl}"></audio><p>${haqiqiy.slice(0, 90)}…</p><button class="btn" disabled>Matnga aylantirish</button>`;
+  d.querySelector(".btn").addEventListener("click", async () => {
+    try {
+      const buf = await (await fetch(fayl)).arrayBuffer();
+      transkripsiya(await decode(buf), "Namuna: " + fayl.split("/").pop(), haqiqiy);
+    } catch (e) { xato("Namunani o'qib bo'lmadi: " + e.message); }
+  });
+  $("examples").appendChild(d);
+}
+
+// ---------- fayl yuklash ----------
+async function faylniOqi(f) {
+  if (!f) return;
+  try { transkripsiya(await decode(await f.arrayBuffer()), f.name); }
+  catch (e) { xato("Bu faylni o'qib bo'lmadi (format qo'llab-quvvatlanmaydi): " + f.name); }
+}
+$("file").addEventListener("change", (e) => faylniOqi(e.target.files[0]));
+const drop = $("drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (e) => faylniOqi(e.dataTransfer.files[0]));
+
+// ---------- mikrofon: yozish + jonli to'lqin ----------
+let rec = null, chunks = [], stream = null, analyser = null, raf = 0, startT = 0;
+const cv = $("viz"), g = cv.getContext("2d");
+
+function chiz() {
+  const W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  if (!analyser) return;
+  const data = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(data);
+  const gr = g.createLinearGradient(0, 0, W, 0);
+  gr.addColorStop(0, "#ec4899"); gr.addColorStop(.5, "#8b5cf6"); gr.addColorStop(1, "#22d3ee");
+  g.strokeStyle = gr; g.lineWidth = 3; g.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = (i / (data.length - 1)) * W, y = H / 2 + ((data[i] - 128) / 128) * (H / 2) * 1.6;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.stroke();
+  $("micHint").innerHTML = `<span class="timer">● ${((performance.now() - startT) / 1000).toFixed(1)} s</span> — to'xtatish uchun yana bosing`;
+  raf = requestAnimationFrame(chiz);
+}
+
+$("mic").addEventListener("click", async () => {
+  if (rec && rec.state === "recording") { rec.stop(); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    xato("Mikrofonga ruxsat berilmadi. Brauzer sozlamalarida ruxsat bering yoki fayl yuklang.");
+    return;
+  }
+  const actx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = actx.createAnalyser(); analyser.fftSize = 1024;
+  actx.createMediaStreamSource(stream).connect(analyser);
+  chunks = [];
+  rec = new MediaRecorder(stream);
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  rec.onstop = async () => {
+    cancelAnimationFrame(raf); analyser = null; g.clearRect(0, 0, cv.width, cv.height);
+    stream.getTracks().forEach((t) => t.stop()); actx.close();
+    $("mic").classList.remove("on");
+    $("micHint").textContent = "Bosing va qoraqalpoqcha gapiring";
+    const blob = new Blob(chunks, { type: rec.mimeType });
+    try { transkripsiya(await decode(await blob.arrayBuffer()), "Mikrofon yozuvi"); }
+    catch (e) { xato("Yozuvni o'qib bo'lmadi: " + e.message); }
+  };
+  rec.start();
+  startT = performance.now();
+  $("mic").classList.add("on");
+  chiz();
+});
+
+yukla();
+</script>
+</body>
+</html>
