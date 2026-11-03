@@ -241,7 +241,11 @@ function progress(p) {
   }
 }
 
-async function yukla() {
+// Sekin/beqaror internetda katta fayl yuklanishi uzilishi mumkin ("network error"). Tugagan fayllar brauzer
+// keshida qoladi, shuning uchun qayta urinish qolgan joyidan davom etadi.
+const URINISH = 4;
+async function yukla(urinish = 1) {
+  $("err").style.display = "none";
   try {
     asr = await pipeline("automatic-speech-recognition", MODEL, {
       dtype: DTYPE,
@@ -255,8 +259,19 @@ async function yukla() {
     document.querySelectorAll(".ex .btn").forEach((b) => (b.disabled = false));
     setTimeout(() => ($("loader").style.opacity = ".6"), 800);
   } catch (e) {
+    const msg = String(e?.message || e);
+    if (urinish < URINISH && /network|fetch|load|abort|timed? ?out/i.test(msg)) {
+      console.warn(`yuklash uzildi (${urinish}/${URINISH}):`, msg);
+      $("loadText").textContent = `Internet uzildi, qayta urinilmoqda (${urinish + 1}/${URINISH})…`;
+      await new Promise((r) => setTimeout(r, 3000 * urinish));
+      return yukla(urinish + 1);
+    }
     console.error(e);
-    xato("Modelni yuklab bo'lmadi: " + (e?.message || e) + ". Sahifani yangilab ko'ring.");
+    xato("Modelni yuklab bo'lmadi: " + msg + ". Internetni tekshirib, qayta urinib ko'ring.");
+    const b = document.createElement("button");
+    b.className = "btn"; b.textContent = "Qayta urinish"; b.style.marginLeft = "10px";
+    b.onclick = () => yukla(1);
+    $("err").appendChild(b);
   }
 }
 
