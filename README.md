@@ -41,7 +41,7 @@ Ma'lumotni tozalashdan xatolar tahliligacha bo'lgan butun yo'l shu repoda: kod, 
 - Barcha variantlar **teng sharoitda** o'lchangan: bir xil fp32, bir xil normalizatsiya va bir xil reference ([`07_eval/eval_teng.py`](07_eval/eval_teng.py)).
 - **Halqa zaxirasi.** Model ba'zan bitta so'zni takrorlab "halqa"ga tushadi. Shunday bo'lsa, bo'lak `no_repeat_ngram_size=3` bilan qayta o'qiladi. Test to'plamida bu faqat 6 ta klipga tegdi, lekin WER'ni 1.5 punkt tushirdi ([`07_eval/eval_halqa_zaxira.py`](07_eval/eval_halqa_zaxira.py)). Zaxira sozlamalari testda tanlanmagan.
 
-🎬 **Video:** [16:9 (GitHub)](assets/video_16x9.mp4) · [4:5 (ijtimoiy tarmoq)](assets/video_4x5.mp4). Loyiha 54 soniyada; video ham kod bilan yasalgan: [`scripts/make_video.py`](scripts/make_video.py).
+🎬 **Video:** [16:9 (GitHub)](assets/video_16x9.mp4) · [4:5 (ijtimoiy tarmoq)](assets/video_4x5.mp4). Loyiha 54 soniyada. Video ham, uning musiqasi va ovoz effektlari ham kod bilan yasalgan (namuna fayllarsiz): [`scripts/make_video.py`](scripts/make_video.py), [`scripts/make_audio.py`](scripts/make_audio.py).
 
 ---
 
