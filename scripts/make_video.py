@@ -1,11 +1,11 @@
-"""Loyiha videosi (MP4, 16:9 va 4:5) va README uchun demo GIF.
+"""README uchun demo GIF (va ixtiyoriy ravishda loyiha videosi: MP4, 16:9 va 4:5; videolar repoga kirmaydi).
 
 Barcha raqamlar repodagi natija fayllaridan o'qiladi. "Jonli demo" sahnasidagi ovoz examples/namuna_2.flac,
 matn esa modelning shu audio uchun haqiqiy chiqishi (test to'plami, WER 0%).
 
 Ishga tushirish (repo ildizidan, ffmpeg kerak):
-    python scripts/make_video.py                 # hammasi
-    python scripts/make_video.py 16x9 | 4x5 | gif
+    python scripts/make_video.py                 # demo GIF
+    python scripts/make_video.py 16x9 | 4x5      # video (assets/*.mp4, .gitignore'da)
     python scripts/make_video.py kadr            # har sahnadan bitta tekshiruv kadri (assets/_kadr_*.png)
 Shriftlar: Segoe UI (Windows); topilmasa DejaVu Sans.
 """
@@ -781,7 +781,7 @@ def demo_gif():
 
 
 if __name__ == "__main__":
-    nima = sys.argv[1:] or ["16x9", "4x5", "gif"]
+    nima = sys.argv[1:] or ["gif"]
     if "kadr" in nima:
         for W, H, nom in [(1920, 1080, "16x9"), (1080, 1350, "4x5")]:
             k = Kadr(W, H)

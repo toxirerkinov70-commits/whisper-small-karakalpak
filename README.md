@@ -7,7 +7,6 @@ Ma'lumotni tozalashdan xatolar tahliligacha bo'lgan butun yo'l shu repoda: kod, 
 
 [![Model](https://img.shields.io/badge/🤗%20Model-whisper--small--karakalpak-FFD21E?style=for-the-badge)](https://huggingface.co/Toxirerkinovtohir/whisper-small-karakalpak)
 [![Demo](https://img.shields.io/badge/▶%20Demo-brauzerda%20sinash-EC4899?style=for-the-badge)](https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html)
-[![Video](https://img.shields.io/badge/🎬%20Video-54%20soniya-8B5CF6?style=for-the-badge)](assets/video_16x9.mp4)
 
 ![Test WER](https://img.shields.io/badge/test%20WER-20.2%25-10B981?style=flat-square)
 ![Test CER](https://img.shields.io/badge/test%20CER-7.1%25-10B981?style=flat-square)
@@ -41,13 +40,12 @@ Ma'lumotni tozalashdan xatolar tahliligacha bo'lgan butun yo'l shu repoda: kod, 
 - Barcha variantlar **teng sharoitda** o'lchangan: bir xil fp32, bir xil normalizatsiya va bir xil reference ([`07_eval/eval_teng.py`](07_eval/eval_teng.py)).
 - **Halqa zaxirasi.** Model ba'zan bitta so'zni takrorlab "halqa"ga tushadi. Shunday bo'lsa, bo'lak `no_repeat_ngram_size=3` bilan qayta o'qiladi. Test to'plamida bu faqat 6 ta klipga tegdi, lekin WER'ni 1.5 punkt tushirdi ([`07_eval/eval_halqa_zaxira.py`](07_eval/eval_halqa_zaxira.py)). Zaxira sozlamalari testda tanlanmagan.
 
-🎬 **Video:** [16:9 (GitHub)](assets/video_16x9.mp4) · [4:5 (ijtimoiy tarmoq)](assets/video_4x5.mp4). Loyiha 54 soniyada. Video ham, uning musiqasi va ovoz effektlari ham kod bilan yasalgan (namuna fayllarsiz): [`scripts/make_video.py`](scripts/make_video.py), [`scripts/make_audio.py`](scripts/make_audio.py).
 
 ---
 
 ## 🚀 Sinab ko'rish
 
-**1. Brauzerda, hech narsa o'rnatmasdan.** [**Demo sahifasi**](https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html) ([HF Space](https://huggingface.co/spaces/Toxirerkinovtohir/karakalpak-asr)): mikrofonga gapiring yoki fayl yuklang. Model sizning brauzeringizda ishlaydi ([transformers.js](https://huggingface.co/docs/transformers.js), ONNX). Audio hech qayerga yuborilmaydi. Model ~610 MB, birinchi marta yuklanadi, keyin brauzer keshidan olinadi.
+**1. Brauzerda, hech narsa o'rnatmasdan.** [**Demo sahifasi**](https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html) ([HF Space](https://huggingface.co/spaces/Toxirerkinovtohir/karakalpak-asr)): mikrofonga gapiring yoki fayl yuklang. Model sizning brauzeringizda ishlaydi ([transformers.js](https://huggingface.co/docs/transformers.js), ONNX). Audio hech qayerga yuborilmaydi. Model ~245 MB (4-bit), birinchi marta yuklanadi, keyin brauzer keshidan olinadi.
 
 <div align="center"><img src="assets/brauzer_demo.png" alt="Brauzer demosi: namuna audio va modelning chiqishi" width="760"></div>
 
@@ -113,7 +111,7 @@ Har bir papka bitta bosqich, raqami ishlash tartibini bildiradi:
 | [`06_finetune`](06_finetune) | O'qitish, checkpoint tanlash, trening tarixi | `train_whisper.py`, `results/` |
 | [`07_eval`](07_eval) | Teng sharoitda baholash, xatolar tahlili | `eval_teng.py`, [`xatolar_tahlili.md`](07_eval/xatolar_tahlili.md) |
 | [`08_lora`](08_lora) | LoRA va to'liq fine-tuning taqqoslovi | `lora_vs_full.py`, `*_natija.json` |
-| [`scripts`](scripts) | README grafiklari, video va ONNX eksport | `make_figures.py`, `make_video.py`, `export_onnx.py` |
+| [`scripts`](scripts) | README grafiklari, demo GIF va ONNX eksport | `make_figures.py`, `make_video.py`, `export_onnx.py` |
 | [`web`](web) | Brauzer demosi (transformers.js) va uning oxirigacha testi | `index.html`, `serve.py`, `e2e_test.mjs` |
 | [`docs`](docs) | Bir sahifalik yakuniy xulosa | [`YAKUNIY_XULOSA.md`](docs/YAKUNIY_XULOSA.md) |
 
@@ -201,7 +199,7 @@ Model PyTorch'dan ONNX'ga o'girildi va [`web/index.html`](web/index.html) sahifa
 | Muammo | Sabab | Yechim |
 |---|---|---|
 | `Missing the following inputs: cache_position` | transformers ≥ 4.43 bilan eksport decoder'ga yangi kirish qo'shadi, transformers.js uni bermaydi | Eksport transformers 4.42 + optimum 1.21 muhitida ([`scripts/export_onnx.py`](scripts/export_onnx.py)) |
-| 8-bit modelda sifat tushdi | Per-tensor 8-bit: 40 ta test klipida CER 8.84% → 15.60% | Encoder fp32 + decoder **4-bit blokli** (MatMulNBits): namunalarda PyTorch'ga deyarli aynan mos |
+| 8-bit modelda sifat tushdi | Per-tensor 8-bit: 40 ta test klipida CER 8.84% → 15.60% | Encoder va decoder **4-bit blokli** (MatMulNBits), token embedding fp16: namunalarda va 30 s audioda fp32 encoder bilan bir xil sifat, hajm 610 → 245 MB |
 | 12 s audio **188 s** da o'qildi | Brauzer WASM'ni bitta oqimda ishlatgan | COOP/COEP sarlavhalari (`crossOriginIsolated`) → ko'p oqim: **13 s** |
 
 Sahifa haqiqiy brauzerda oxirigacha sinaldi ([`web/e2e_test.mjs`](web/e2e_test.mjs), headless Edge): model yuklandi, namuna haqiqiy matn bilan aynan bir xil o'qildi, konsolda xato yo'q.
@@ -220,7 +218,7 @@ pip install -r requirements-train.txt
 3. **O'qitish (GPU):** `cd 06_finetune && python train_whisper.py`
 4. **Baholash (GPU):** `cd 07_eval && python eval_teng.py`. Model sukut bo'yicha HF'dan olinadi; lokal checkpoint uchun `KAA_ASR_MODEL=yol/modelga` bering.
 5. **CPU'da ishlaydigan tahlillar:** `gold50.py`, `oza_soni.py` va `xato_tahlili.py` repodagi CSV'larni **bayt-bayt bir xil** qayta chiqaradi (tekshirilgan).
-6. **Grafik va video:** `python scripts/make_figures.py`, `python scripts/make_video.py`.
+6. **Grafik va GIF:** `python scripts/make_figures.py`, `python scripts/make_video.py gif`.
 
 Testlar: `pip install -r requirements-dev.txt && pytest`. Ular normalizatsiya qoidalari, halqa detektori va uzun audioni bo'laklashni tekshiradi (21 ta test).
 
@@ -229,7 +227,7 @@ Testlar: `pip install -r requirements-dev.txt && pytest`. Ular normalizatsiya qo
 ## 🚧 Cheklovlar va keyingi qadamlar
 
 - Ma'lumot asosan **yangiliklar uslubidagi o'qilgan nutq**. Erkin suhbat, shevalar va shovqinda sifat pastroq bo'lishi kutiladi.
-- Brauzer demosi `transformers.js` da **greedy** dekodlash bilan ishlaydi (decoder 4-bit), shuning uchun Python'dagi beam 5 dan biroz pastroq.
+- Brauzer demosi `transformers.js` da **greedy** dekodlash bilan ishlaydi (4-bit model), shuning uchun Python'dagi beam 5 dan biroz pastroq.
 - Sonlar so'z bilan yoziladi (`eki mıń jigirma altınshı`), tinish belgisi va katta harf yo'q. Model normalizatsiya qilingan matn uslubida yozadi.
 - **Keyingi qadamlar:**
   - qoraqalpoq matnidan til modeli qurib, LM fusion qilish (qo'shimcha xatolariga qarshi);

@@ -135,7 +135,7 @@
     <div class="stat"><b><span class="from">100.3%</span><span class="grad">20.2%</span></b><span>test WER (Python, beam 5)</span></div>
     <div class="stat"><b class="grad">7.1%</b><span>test CER</span></div>
     <div class="stat"><b>99 soat</b><span>toza o'qitish ma'lumoti</span></div>
-    <div class="stat"><b>~610 MB</b><span>bir marta yuklanadi, keyin keshda</span></div>
+    <div class="stat"><b>~245 MB</b><span>bir marta yuklanadi, keyin keshda</span></div>
   </div>
 
   <a class="fast" id="fast" href="https://toxirerkinovtohir-karakalpak-asr.static.hf.space/index.html" target="_blank" rel="noopener">
@@ -179,10 +179,10 @@
   </div>
 
   <p class="note">
-    Brauzer versiyasi ONNX model (encoder fp32, decoder 4-bit) va <b>greedy</b> dekodlash bilan ishlaydi (<a href="https://huggingface.co/docs/transformers.js">transformers.js</a>).
+    Brauzer versiyasi 4-bit kvantlangan ONNX model (~245 MB) va <b>greedy</b> dekodlash bilan ishlaydi (<a href="https://huggingface.co/docs/transformers.js">transformers.js</a>).
     Shu sahifadagi namunalarda va 30 soniyalik uzun audioda brauzer natijasi PyTorch bilan deyarli aynan bir xil chiqdi.
     Greedy dekodlash Python'dagi beam 5'dan biroz pastroq (test WER 27.0% va 20.2%).
-    Telefonda birinchi yuklanish biroz vaqt oladi. Eng yuqori sifat uchun (beam 5, halqa zaxirasi, test WER 18.7%)
+    Telefonda birinchi yuklanish va tanish kompyuterdagidan sekinroq. Eng yuqori sifat uchun (beam 5, halqa zaxirasi, test WER 18.7%)
     Python'dagi <a href="https://github.com/toxirerkinov70-commits/whisper-small-karakalpak#-sinab-korish"><code>transcribe.py</code></a> dan foydalaning.
     Model yangiliklar uslubidagi o'qilgan nutqda o'qitilgan; erkin suhbat va shovqinda sifat pastroq bo'lishi mumkin. Model matnni kichik harf va tinish belgilarisiz yozadi.
     Namuna audiolar: <a href="https://huggingface.co/datasets/atikuwu/karakalpak-speech-corpus">Karakalpak Speech Corpus</a> (atikuwu, CC-BY-4.0).
@@ -198,8 +198,16 @@
 <script type="module">
 import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1";
 
-const MODEL = "Toxirerkinovtohir/whisper-small-karakalpak";
+let MODEL = "Toxirerkinovtohir/whisper-small-karakalpak";
 const SR = 16000;
+// Lokal sinov: ?local=papka -> model fayllari serverdagi /<papka>/ dan olinadi (HF'ga yuklashdan oldin tekshirish uchun)
+const LOCAL = new URLSearchParams(location.search).get("local");
+if (LOCAL) { env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = "/"; MODEL = LOCAL; }
+// 4-bit blokli kvantlash (MatMulNBits, block 32) ikkala qismda ham: telefon xotirasiga sig'adi.
+// Per-tensor 8-bit sifatni buzdi (CER 8.8% -> 15.6%), shuning uchun u ishlatilmaydi.
+let DTYPE = { encoder_model: "q4", decoder_model_merged: "q4" };
+const D = new URLSearchParams(location.search).get("dtype");     // sinov uchun: ?dtype=fp32,q4
+if (D) { const [e, d] = D.split(","); DTYPE = { encoder_model: e, decoder_model_merged: d }; }
 const NAMUNALAR = [
   ["../examples/namuna_1.flac", "parlament qadaǵalawın alıp barıwda tiykarǵı itibar aymaqlarǵa qaratıladı mámleketimiz basshısı tárepinen sociallıq ekonomikalıq tarawlarda anıq wazıypalar hám úlken shekler qoyılmaqta"],
   ["../examples/namuna_2.flac", "ilajda qaraqalpaqstan respublikası salıq basqarmasınıń baslıǵı xalmurza bekchanov sawda sanaat palatasınıń baslıǵı kazbek artikov taraw qánigeleri isbilermenler hám xalıq wákilleri qatnastı"],
@@ -236,7 +244,7 @@ function progress(p) {
 async function yukla() {
   try {
     asr = await pipeline("automatic-speech-recognition", MODEL, {
-      dtype: { encoder_model: "fp32", decoder_model_merged: "q4" },   // Node.js testida tanlangan: q8 sifatni buzdi
+      dtype: DTYPE,
       device: "wasm",
       progress_callback: progress,
     });

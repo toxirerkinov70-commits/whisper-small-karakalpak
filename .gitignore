@@ -20,3 +20,6 @@ runs/
 # Lokal
 .env
 *.log
+
+# Video fayllar repoga kirmaydi (README'da GIF va grafiklar yetarli)
+assets/*.mp4
